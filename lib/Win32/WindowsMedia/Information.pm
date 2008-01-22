@@ -9,11 +9,11 @@ Win32::WindowsMedia::Information - The information module for WindowsMedia
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
@@ -21,7 +21,68 @@ our $VERSION = '0.01';
 
 =head1 FUNCTIONS
 
+=head2 Publishing_Point_List
+
+    This function returns the publishing points matching the mask specified
+into an array.
+
+    <mask> can be a regular expression, the following examples have been
+tested
+
+           * - All Publishing Points
+           mytest - This will return all publishing points that have mytest
+                    in their name
+           ^mytest$ - This will only return the publishing point named
+                      mytest
+
+    Publishing_Point_List ( $Server_Object, "<mask>" );
+
+Example of Use
+
+    my @publishing_point = $Information->Publishing_Point_List( $Server_Object, "*");
+
+    The above will return all publishing points defined.
+
+=head2 Publishing_Point_Authorization_IPAddress_Get
+
+    This function returns the allowed or disallowed ( one might use the word banned )
+that are currently configured on the specified publishing point.
+
+    You need to specify DisallowIP or AllowIP and a pointer to a hash to return the
+configured addresses.
+
+    Publishing_Point_Authorization_IPAddress_Get(
+                     $Server_Object,
+                     "<publishing point name>",
+                     "<list to return>",
+                     <hash pointer for returned values>);
+
+    Example of Use
+
+    my %AllowIPList;
+    my $result = $Information->Publishing_Point_Authorization_IPAddress_Get(
+                     $Server_Object,
+                     "andrew",
+                     "AllowIP",
+                     \%AllowIPList);
+
 =head2 Publishing_Point_Players_Get
+
+    This function returns the currently connected clients to the specified
+publishing point specified.
+
+    Publishing_Point_Players_Get(
+                     $Server_Object,
+                     "<publishing point name>",
+                     <hash pointer for the returned values>);
+
+    Example of Use
+
+    my %ConnectedClients;
+    my $result = $Information->Publishing_Point_Players_Get(
+                     $Server_Object,
+                     "andrew",
+                     \%ConnectedClients);
 
 =cut
 
@@ -40,6 +101,25 @@ sub new {
         return $self;
 }
 
+sub Publishing_Point_List
+{
+my $self = shift;
+my $server_object = shift;
+my $publishing_point_name = shift;
+my @found_publishing_points;
+
+if ( !$server_object )
+        { $self->set_error("Server Object Not Set"); return 0; }
+
+for ( $a=0; $a< $server_object->PublishingPoints->{'length'}; $a++ )
+	{
+	if ( $server_object->PublishingPoints->{$a}->{'Name'}=~/^$publishing_point_name/i )
+		{ push @found_publishing_points, $$server_object->PublishingPoints->{$a}->{'Name'}; }
+	}
+
+return @found_publishing_points;
+}
+
 sub Publishing_Point_Authorization_IPAddress_Get
 {
 my $self = shift;
@@ -49,10 +129,13 @@ my $ip_list_type = shift;
 my $limit_values = shift;
 if ( !$server_object )
         { $self->set_error("Server Object Not Set"); return 0; }
+
 if ( !$server_object->PublishingPoints($publishing_point_name) )
         { $self->set_error("Publishing Point Not Defined"); return 0; }
+
 if ( $ip_list_type!~/^AllowIP/ || $ip_list_type!~/^DisallowIP/ )
         { $self->set_error("AllowIP or DisallowIP are the only valid types"); return 0; }
+
 my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
 my $IP_Control = $publishing_point ->EventHandlers("WMS IP Address Authorization");
 my $IP_Custom = $IP_Control->CustomInterface();
@@ -79,9 +162,17 @@ my $server_object = shift;
 my $publishing_point_name = shift;
 my $limit_values = shift;
 if ( !$server_object )
-        { $self->set_error("Server Object Not Set"); return 0; }
+        { 
+	$self->set_error("Server Object Not Set"); 
+	return 0; 
+	}
+
 if ( !$server_object->PublishingPoints($publishing_point_name) )
-        { $self->set_error("Publishing Point Not Defined"); return 0; }
+        { 
+	$self->set_error("Publishing Point Not Defined"); 
+	return 0; 
+	}
+
 my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
 my $players = $publishing_point ->{Players};
 my $player_status = Win32::WindowsMedia::BaseVariables->PlayerStatus();
@@ -141,7 +232,7 @@ L<http://search.cpan.org/dist/Win32-WindowsMedia-Provision>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 Andrew S. Kennedy, all rights reserved.
+Copyright 2008 Andrew S. Kennedy, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

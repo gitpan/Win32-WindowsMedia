@@ -11,11 +11,11 @@ Win32::WindowsMedia::Provision - The provisioning module for WindowsMedia
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
@@ -367,10 +367,19 @@ if ( $server_object->PublishingPoints($publishing_point_name) )
 
 my $publishing_points = $server_object->PublishingPoints;
 
-my $publishing_point_new = $publishing_points->Add( 
+# We need to eval this with a timer, why you might asked,
+# well you can figure it out.
+
+my $publishing_point_new;
+eval {
+        local $SIG{ALRM} = sub { die "Broken"; };
+        alarm 5;
+	$publishing_point_new = $publishing_points->Add( 
 				$publishing_point_name,
 				$real_pub_point_type,
 				$publishing_point_url );
+alarm 0;
+};
 
 if ( !$publishing_point_new )
 	{
@@ -417,7 +426,7 @@ L<http://search.cpan.org/dist/Win32-WindowsMedia-Provision>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 Andrew S. Kennedy, all rights reserved.
+Copyright 2008 Andrew S. Kennedy, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

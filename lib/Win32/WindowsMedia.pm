@@ -15,46 +15,45 @@ Win32::WindowsMedia - Base Module for Provisiong and control for Windows Media S
 
 =head1 VERSION
 
-Version 0.15
+Version 0.16
 
 =cut
 
-our $VERSION = '0.15';
+our $VERSION = '0.16';
 
 =head1 SYNOPSIS
 
-This is a module to control Windows Media services for a Windows 2003/2008 server. This
-is a pre-alpha release and based on work done in 2005/2006.
+This is a module to control Windows Media services for a Windows 2003/2008 server. This 
+is the second pre-alpha release and primarily contains more documentation. At present
+this is 4 modules that contain seperation of functions.
 
-An example script is below and that is the current limitation of the documentation.
+    use Win32::WindowsMedia;
+    use strict;
 
-#!/usr/bin/perl
+    my $main =new Win32::WindowsMedia;
+    my $provisioner =new Win32::WindowsMedia::Provision;
+    my $information =new Win32::WindowsMedia::Information; 
+    my $controller =new Win32::WindowsMedia::Control;
 
-use strict;
-use Win32::WindowsMedia;
+    my $server_object = $main->Server_Create("127.0.0.1");
 
-my $main =new Win32::WindowsMedia;
-my $provisioner =new Win32::WindowsMedia::Provision;
-my $information =new Win32::WindowsMedia::Information;
-my $controller =new Win32::WindowsMedia::Control;
-
-my $server_object = $main->Server_Create("127.0.0.1");
-
-my $publishing_point = $provisioner->
-                Publishing_Point_Create(
-                        $server_object,
-                        "andrew",
-                        "push:*",
-                        "broadcast"
-                        );
-
+    my $publishing_point = $provisioner->
+		Publishing_Point_Create( $server_object, "andrew", "push:*", "broadcast" );
 
 =head1 FUNCTIONS
 
-=head2 Server_Create
+=item C<< Server_Create >>
 
-This creates a Windows Media instance and although you can specify any IP address
-it will usually be 127.0.0.1.
+This function create an instance to communicate with the Windows Media Server running. You
+can specify an IP address, however 99% of the time it should be one of the local interface
+IPs or localhost(127.0.0.1). It does not matter which IP is used as Windows Media services
+is not bound to a specific IP.
+
+    Server_Create( "<IP>" );
+
+Example of Use
+
+    my $server_object = $main->Server_Create("127.0.0.1");
 
 =cut
 
@@ -69,10 +68,6 @@ sub new {
                 { $self->{_GLOBAL}{$field}=$val; }
 
         $self->{_GLOBAL}{'STATUS'}="OK";
-
-	#$self->{'Provision'} = new Win32::WindowsMedia::Provision();
-	#$self->{'Control'} = new Win32::WindowsMedia::Control();
-	#$self->{'Information'} = new Win32::WindowsMedia::Information();
 
         return $self;
 }
@@ -100,8 +95,7 @@ if ( !$server_object )
 return $server_object;
 }
 
-# not sure which constructs these should be under, but semi placeholders for now.
-sub set_error
+sub _set_error
 {
 my $self = shift;
 my $error = shift;
@@ -109,7 +103,7 @@ $self->{_GLOBAL}{'STATUS'} = $error;
 return 1;
 }
 
-sub get_error
+sub _get_error
 {
 my $self = shift;
 return $self->{_GLOBAL}{'STATUS'};
@@ -140,7 +134,7 @@ L<http://search.cpan.org/dist/Win32-WindowsMedia>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 Andrew S. Kennedy, all rights reserved.
+Copyright 2008 Andrew S. Kennedy, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

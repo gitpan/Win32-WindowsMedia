@@ -9,11 +9,11 @@ Win32::WindowsMedia::Control - The control module for Windows Media
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
@@ -21,7 +21,39 @@ our $VERSION = '0.01';
 
 =head1 FUNCTIONS
 
-=head2 function1
+=head2 Playlist_Jump_To_Event
+
+    This function should only be used WHEN YOU KNOW WHAT YOU ARE DOING!
+
+    It will not break anything, however requires much more than just a
+publishing point name and event name to work.
+
+    Playlist_Jump_To_Event(
+		$Server_Object,
+		"<Publishing Point Name>",
+		"<Event Name>"
+			);
+
+Example of Use
+
+    my $result = $Control->Playlist_Jump_To_Event(
+		$Server_Object,
+		"andrew",
+		"event1");
+
+=head2 Playlist_Build
+
+    This function builds a server side playlist. An array of filenames 
+are required and a single string is required. This function does not use
+internal playlist functions.
+
+    Playlist_Build( <pointer to filename array> );
+
+    ( not yet available )
+
+Example of Use
+
+    my $playlist = $Control->Playlist_Build(\@filename_array);
 
 =cut
 
@@ -40,15 +72,43 @@ sub new {
         return $self;
 }
 
-sub function1 {
-}
+sub Playlist_Jump_To_Event
+{
+my $self = shift;
+my $server_object = shift;
+my $publishing_point_name = shift;
+my $event_name = shift;
+if ( !$server_object )
+        { 
+	$self->set_error("Server Object Not Set"); 
+	return 0; 
+	}
 
-=head2 function2
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { 
+	$self->set_error("Publishing Point Not Defined"); 
+	return 0; 
+	}
+
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+if ( $publishing_point->{BroadCastStatus}!=2 )
+	{ 
+	$self->set_error("Publishing Point Not Active"); 
+	return 0; 
+	}
+
+my $publishing_point_playlist = $publishing_point->{SharedPlaylist};
+if ( !$publishing_point_playlist ) 
+	{ 
+	$self->set_error("Playlist not defined"); 
+	return 0; 
+	}
+
+my $error = $publishing_point_playlist->FireEvent( $event_name );
+return 1;
+}
 
 =cut
-
-sub function2 {
-}
 
 =head1 AUTHOR
 
@@ -68,7 +128,7 @@ L<http://search.cpan.org/dist/Win32-WindowsMedia-Provision>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 Andrew S. Kennedy, all rights reserved.
+Copyright 2008 Andrew S. Kennedy, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

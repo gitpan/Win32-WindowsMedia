@@ -9,17 +9,26 @@ Win32::WindowsMedia::BaseVariables - The control module for Windows Media
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
     use Win32::WindowsMedia::BaseVariables;
 
 =head1 FUNCTIONS
+
+=head2 ServerType
+
+    This function returns types and values for possible Windows Media Servers
+
+    The possible values are
+
+    Standard/Server
+    Advanced/Enterprise
 
 =head2 PublishingPointLimits
 
@@ -95,7 +104,76 @@ certain properties of the stream.
 
 =head2 PlayerStatus
 
+    This function returns the possible player conditions
+
+    Disconnected
+    Idle
+    Open
+    Streaming
+
 =head2 UserAccessSettings
+
+    This function returns the values and states available for users that are configured
+for access control to the publishing point. 
+ 
+    The possible states are
+
+    ACCESSINIT
+    ReadDeny
+    WriteDeny
+    CreateDeny
+    AllDeny
+    UNKNOWN
+    ReadAllow
+    WriteAllow
+    CreateAllow
+    AllAllow
+
+=head2 ServerLogCycle
+
+    This function returns the values and states for the automatic log file cycler. 
+
+    The possible states are
+
+    None
+    Size
+    Month
+    Week
+    Day
+    Hour
+
+=head2 PublishingPointType
+
+    This function returns the values and types for a publishing point
+
+    The possible states are
+
+    OnDemand
+    Broadcast
+    CacheProxyOnDemand
+    CacheProxyBroadcast
+
+=head2 PublishingPointBroadCastStatus
+
+    This function returns the values and states available for a publishing point
+
+    The possible states are
+
+    Stopped
+    Started No Data
+    Started
+    Archiving
+    Change In Progress
+
+=head2 ActiveStreamType
+
+    This function returns the values and types for a stream
+
+    The possible states are
+
+    Video
+    Audio
+    Other
 
 =cut
 
@@ -244,15 +322,32 @@ my %PublishingPointType =
 return \%PublishingPointType;
 }
 
-sub function1 {
+sub PublishingPointBroadCastStatus
+{
+my %PublishingPointBroadCastStatus =
+		(
+		0	=>	'Stopped',
+		1	=>	'Started No Data',
+		2	=>	'Started',
+		3	=>	'Archiving',
+		4	=>	'Change In Progress'
+		);
+return \%PublishingPointBroadCastStatus;
 }
 
-=head2 function2
+sub ActiveStreamType
+{
+my %StreamType =
+		(
+		0	=>	'Video',
+		1	=>	'Audio',
+		2	=>	'Other'
+		);
+
+return \%StreamType;
+}
 
 =cut
-
-sub function2 {
-}
 
 =head1 AUTHOR
 
