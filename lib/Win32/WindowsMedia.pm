@@ -4,9 +4,6 @@ use warnings;
 use strict;
 use Win32::OLE qw( in with HRESULT );
 use Win32::OLE::Const "Windows Media Services Server Object Model and Plugin 9.0 Type Library";
-use Win32::WindowsMedia::Provision;
-use Win32::WindowsMedia::Control;
-use Win32::WindowsMedia::Information;
 use Win32::WindowsMedia::BaseVariables;
 
 =head1 NAME
@@ -15,32 +12,35 @@ Win32::WindowsMedia - Base Module for Provisiong and control for Windows Media S
 
 =head1 VERSION
 
-Version 0.16
+Version 0.20
 
 =cut
 
-our $VERSION = '0.16';
+our $VERSION = '0.20';
 
 =head1 SYNOPSIS
 
-This is a module to control Windows Media services for a Windows 2003/2008 server. This 
-is the second pre-alpha release and primarily contains more documentation. At present
-this is 4 modules that contain seperation of functions.
+This is a module to control Windows Media services for a Windows 2003/2008 server. This is a 
+complete change to the pre-alpha releases (0.15 and 0.16) as all functions are now in one module.
+To create a Windows Media control instance do the following
 
     use Win32::WindowsMedia;
     use strict;
 
     my $main =new Win32::WindowsMedia;
-    my $provisioner =new Win32::WindowsMedia::Provision;
-    my $information =new Win32::WindowsMedia::Information; 
-    my $controller =new Win32::WindowsMedia::Control;
 
-    my $server_object = $main->Server_Create("127.0.0.1");
+    my $create_server = $main->Server_Create("127.0.0.1");
 
-    my $publishing_point = $provisioner->
-		Publishing_Point_Create( $server_object, "andrew", "push:*", "broadcast" );
+The $create_server variable should return 1 on success or 0 on failure. You can then call the other
+functions against the main object, an example would be
 
-=head1 FUNCTIONS
+    my $publishing_point = $main->Publishing_Point_Create( "127.0.0.1","andrew", "push:*", "broadcast" );
+
+If you can create objects for multiple addresses (need to be in the same domain) you call the functions
+against the specific IPs. Most uses of the module will be against the local instance of Windows Media which
+should be 127.0.0.1
+
+=head1 Server FUNCTIONS
 
 =item C<< Server_Create >>
 
@@ -53,7 +53,132 @@ is not bound to a specific IP.
 
 Example of Use
 
-    my $server_object = $main->Server_Create("127.0.0.1");
+    my $result = $main->Server_Create("127.0.0.1");
+
+On success $result will return 1, on failure 0. If there is a failure error is set and can be retrieved.
+
+=item C<< Server_Destroy >>
+
+This function destroys an instance created to communicate with the Windows Media Server running. You
+must specify the IP address used to create the instance.
+
+    Server_Destroy( "<IP>" );
+
+Example of Use
+
+    my $result = $main->Server_Destroy("127.0.0.1");
+
+On success $result will return 1, on failure 0. If there is a failure, error is set and can be retrieved.
+
+=head1 Control FUNCTIONS
+
+=item C<< Publishing_Point_Create >>
+
+This function creates a new publishing point on the Windows Media server specified. You need to specify
+the publishing point, the URL to use ( see example ) and also the type ( again see example ). This function
+is called through eval ( do not worry if you have no idea what this means ). If the URL specified is invalid
+Windows Media services will attempt to resolve it and return an invalid callback via OLE. This causes any 
+scripts to stop without warning thus eval catches this nicely.
+
+    Publishing_Point_Create( "<IP>", "<publishing point name>", "<URL>", "<Type>" );
+
+    Publishing point name - Can be any alphanumeric and _ characters
+    URL - can be one of push:* , or http://<ip>/<pub point> for relay
+    Type - Can be one of OnDemand, Broadcast, CacheProxyOnDemand, CacheProxyBroadcast
+
+Example of Use
+
+    my $result = $main->Publishing_Point_Create("127.0.0.1","andrew","push:*","broadcast");
+
+On success $result will return 1, on failure 0. If there is a failure, error is set and can be retrieved.
+
+=item C<< Publishing_Point_Remove >>
+
+This function removes the publishing point name specified. You need to specify the IP and the publishing
+point name. 
+
+    Publishing_Point_Remove( "<IP>", "<publishing point name>" );
+
+    my $result = $main->Publishing_Point_Remove("127.0.0.1","andrew");
+
+On success $result will return 1, on failure 0. If there is a failure, error is set and can be retrieved.
+
+=item C<< Publishing_Point_Start >>
+
+This function is only required if the publishing point in question is not using Push and auto start is off.
+
+    Publishing_Point_Start( "<IP>", "<publishing point name>" );
+
+Example of Use
+
+    my $result = $main->Publishing_Point_Start("127.0.0.1","andrew");
+
+On success $result will return 1, on failure 0. If there is a failure, error is set and can be retrieved.
+
+=item C<< Publishing_Point_Stop >>
+
+This can be used on all types of publishing points and causes the source to be disconnected. If auto start
+is configured on the publishing point will not stop for long, max 30 seconds. If auto start on client
+connection it will be stopped until a client reconnects.
+
+    Publishing_Point_Stop( "<IP>", "<publishing point name>" );
+
+Example of Use
+
+    my $result = $main->Publishing_Point_Stop("127.0.0.1","andrew");
+
+On success $result will return 1, on failure 0. If there is a failure, error is set and can be retrieved.
+
+=item C<< Publishing_Point_List >>
+
+This function returns an array of the currently provisioned publishing point names. You *may* find at least
+two which do not show up in the Windows Media adminitration panel. These are for proxy and cache use and
+should be ignored. You can optionally specify a partial match name which will then only return those
+publishing points that match.
+
+    Publishing_Point_List( "<IP>", "<partial match>" );
+
+Example of Use
+
+    my @publishing_point = $main->Publishing_Point_List( "127.0.0.1", "*");
+
+The above will return all publishing points defined.
+
+=item C<< Publishing_Point_Authorization_ACL_Add >>
+
+=item C<< Publishing_Point_Authorization_ACL_Remove >>
+
+=item C<< Publishing_Point_Authorization_IPAddress_Add >>
+
+=item C<< Publishing_Point_Authorization_IPAddress_Remove >>
+
+=item C<< Publishing_Point_Authorization_IPAddress_Get >>
+
+=item C<< Publishing_Point_General_Set >>
+
+=item C<< Publishing_Point_General_Get >>
+
+=item C<< Publishing_Point_Players_Get >>
+
+=item C<< Server_CoreVariable_Get >>
+
+=head1 Playlist FUNCTIONS
+
+=item C<< Playlist_Jump_To_Event >>
+
+This function jumps to a specific section of the current playlist. You need to make sure the playlist
+you are using is constructed correctly for this to work. You have to specify the server IP, publishing
+point name and position in the playlist (known as event). If any of the entries are incorrect or the
+playlist is not correct it will FAIL to jump and return no error.
+
+    Playlist_Jump_To_Event( "<IP>", "<publishing point name>", "<playlist position>" );
+
+Example of Use
+
+    my $result = $main->Playlist_Jump_To_Event("127.0.0.1","andrew","position2");
+
+On success $result will return 1, on failure 0. If there is a failure, error is set and can be retrieved.
+If an incorrect event, publishing point or IP are specified no error is usually returned.
 
 =cut
 
@@ -76,23 +201,602 @@ sub Server_Create
 {
 my $self = shift;
 my $server_ip = shift;
-
 if ( !$server_ip )
 	{
 	$self->set_error("IP Address of Windows Media Server required");
 	return 0;
 	}
-
 my $server_object = new Win32::OLE( [ $server_ip , "WMSServer.Server" ] );
-
 if ( !$server_object )
         {
         $self->set_error("OLE Object Failed To Initialise");
         # need to add error capture here
         return 0;
         }
+$self->{_GLOBAL}{'Server'}{$server_ip}=$server_object;
+return 1;
+}
 
-return $server_object;
+sub Server_Destroy
+{
+my ( $self ) = shift;
+my ( $server_ip ) = shift;
+if ( !$server_ip )
+	{
+	$self->set_error("IP Address of Windows Media Server required");
+	return 0;
+	}
+if ( !$self->{_GLOBAL}{'Server'}{$server_ip} )
+	{
+	$self->set_error("IP Address Specified Has No Server");
+	return 0;
+	}
+
+undef $self->{_GLOBAL}{'Server'}{$server_ip};
+delete $self->{_GLOBAL}{'Server'}{$server_ip};
+return 1;
+}
+
+# Playlist functions go here.
+
+sub Playlist_Jump_To_Event
+{
+my $self = shift;
+my $server_ip = shift;
+my $publishing_point_name = shift;
+my $event_name = shift;
+if ( !$server_ip )
+        { $self->set_error("IP Address of Windows Media Server required");
+	return 0; }
+if ( !$self->{_GLOBAL}{'Server'}{$server_ip} )
+        { $self->set_error("IP Address Specified Has No Server");
+        return 0; }
+
+my ( $server_object ) = $self->{_GLOBAL}{'Server'}{$server_ip};
+
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { 
+	$self->set_error("Publishing Point Not Defined"); 
+	return 0; 
+	}
+
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+if ( $publishing_point->{BroadCastStatus}!=2 )
+	{ 
+	$self->set_error("Publishing Point Not Active"); 
+	return 0; 
+	}
+
+my $publishing_point_playlist = $publishing_point->{SharedPlaylist};
+if ( !$publishing_point_playlist ) 
+	{ 
+	$self->set_error("Playlist not defined"); 
+	return 0; 
+	}
+
+my $error = $publishing_point_playlist->FireEvent( $event_name );
+return 1;
+}
+
+sub Publishing_Point_Authorization_ACL_Add
+{
+my $self = shift;
+my $server_ip = shift;
+my $publishing_point_name = shift;
+my $limit_parameters = shift;
+if ( !$server_ip )
+        { $self->set_error("IP Address of Windows Media Server required");
+        return 0; }
+if ( !$self->{_GLOBAL}{'Server'}{$server_ip} )
+        { $self->set_error("IP Address Specified Has No Server");
+        return 0; }
+
+my ( $server_object ) = $self->{_GLOBAL}{'Server'}{$server_ip};
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { $self->set_error("Publishing Point Not Defined"); return 0; }
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+my $limit_variables = Win32::WindowsMedia::BaseVariables->UserAccessSettings();
+my $User_Control = $publishing_point->EventHandlers("WMS Publishing Points ACL Authorization");
+my $User_Custom = $User_Control->CustomInterface();
+my $User_List = $User_Custom->AccessControlList();
+foreach my $user ( keys %{$limit_parameters} )
+	{
+	my $user_mask = ${$limit_parameters}{$user};
+	my $user_value;
+	foreach my $mask_name ( split(/,/,$user_mask) )
+		{
+		foreach my $limit_names ( keys %{$limit_variables} )
+			{ 
+			if ( $mask_name=~/${$limit_variables}{$limit_names}/i )
+				{ 
+				if ( $mask_name=~/^AllowAll$/i || $mask_name=~/^DenyAll$/i )
+					{ $user_value=$limit_names; }
+					else
+					{ $user_value+=$limit_names; }
+				} 
+			} 
+		}
+	my $add_user=$User_List->Add( $user, $user_value );
+	}
+return 1;
+}
+
+sub Publishing_Point_Authorization_ACL_Remove
+{
+my $self = shift;
+my $server_object = shift;
+my $publishing_point_name = shift;
+my $limit_parameters = shift;
+if ( !$server_object )
+        { $self->set_error("Server Object Not Set"); return 0; }
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { $self->set_error("Publishing Point Not Defined"); return 0; }
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+my $User_Control = $publishing_point ->EventHandlers("WMS Publishing Points ACL Authorization");
+my $User_Custom = $User_Control->CustomInterface();
+my $User_List = $User_Custom->AccessControlList();
+foreach my $user ( @{$limit_parameters} )
+        {
+        my $add_user=$User_List->Remove( $user );
+        }
+return 1;
+}
+
+sub Publishing_Point_Authorization_IPAddress_Add
+{
+my $self = shift;
+my $server_object = shift;
+my $publishing_point_name = shift;
+my $ip_list_type = shift;
+my $limit_parameters = shift;
+if ( !$server_object )
+        { $self->set_error("Server Object Not Set"); return 0; }
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { $self->set_error("Publishing Point Not Defined"); return 0; }
+if ( $ip_list_type!~/^AllowIP$/ && $ip_list_type!~/^DisallowIP$/ )
+	{ $self->set_error("AllowIP or DisallowIP are the only valid types requested '$ip_list_type'"); return 0; }
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+my $IP_Control = $publishing_point ->EventHandlers("WMS IP Address Authorization");
+my $IP_Custom = $IP_Control->CustomInterface();
+my $IPList = ${$IP_Custom}{$ip_list_type};
+foreach my $entry (@{$limit_parameters})
+	{
+	# Probably need to put some IP address and mask checking
+	# in here so not to pass crap to the WindowsMediaService as it appears
+	# to go a little screwy if you do.
+	my ( $address, $netmask ) = (split(/,/,$entry))[0,1];
+	$IPList->Add( $address, $netmask );
+	}
+return 1;
+}
+
+sub Publishing_Point_Authorization_IPAddress_Remove
+{
+my $self = shift;
+my $server_object = shift;
+my $publishing_point_name = shift;
+my $ip_list_type = shift;
+my $limit_parameters = shift;
+if ( !$server_object )
+        { $self->set_error("Server Object Not Set"); return 0; }
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { $self->set_error("Publishing Point Not Defined"); return 0; }
+if ( $ip_list_type!~/^AllowIP/ && $ip_list_type!~/^DisallowIP/ )
+        { $self->set_error("AllowIP or DisallowIP are the only valid types requested '$ip_list_type'"); return 0; }
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+my $IP_Control = $publishing_point ->EventHandlers("WMS IP Address Authorization");
+my $IP_Custom = $IP_Control->CustomInterface();
+my $IPList = ${$IP_Custom}{$ip_list_type};
+if ( ${$IPList}{'Count'}>0 )
+	{
+	foreach my $address (@{$limit_parameters})
+        	{
+		for ( $a=0; $a<${$IPList}{'Count'}; $a++ )
+			{
+			my $ip_entry = ${$IPList}{$a};
+			if ( ${$ip_entry}{'Address'}=~/$address/ )
+				{
+				$IPList->Remove ($a);
+				}
+			}
+		}
+	}
+return 1;
+}
+
+sub Publishing_Point_General_Set
+{
+my $self = shift;
+my $server_object = shift;
+my $publishing_point_name = shift;
+my %limit_parameters = shift;
+if ( !$server_object )
+        { $self->set_error("Server Object Not Set"); return 0; }
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { $self->set_error("Publishing Point Not Defined"); return 0; }
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+my $limit_variables = Win32::WindowsMedia::BaseVariables->PublishingPointGeneral();
+foreach my $limit_name ( keys %limit_parameters )
+	{
+	if ( ${$limit_variables}{$limit_name} )
+		{ $publishing_point->{ ${$limit_variables}{$limit_name} }=$limit_parameters{$limit_name}; }
+	}
+return 1;
+}
+
+sub Publishing_Point_General_Get
+{
+my $self = shift;
+my $server_object = shift;
+my $publishing_point_name = shift;
+my $limit_values = shift;
+if ( !$server_object )
+        { $self->set_error("Server Object Not Set"); return 0; }
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { $self->set_error("Publishing Point Not Defined"); return 0; }
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+my $limit_variables = Win32::WindowsMedia::BaseVariables->PublishingPointGeneral();
+foreach my $limit_name ( keys %{$limit_variables} )
+	{ ${$limit_values}{$limit_name}=${$publishing_point}{$limit_name}; }
+return 1;
+}
+
+sub Publishing_Point_Limits_Set
+{
+my $self = shift;
+my $server_object = shift;
+my $publishing_point_name = shift;
+my %limit_parameters = shift;
+if ( !$server_object )
+        { $self->set_error("Server Object Not Set"); return 0; }
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { $self->set_error("Publishing Point Not Defined"); return 0; }
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+my $Limits = $publishing_point->{Limits};
+my $limit_variables = Win32::WindowsMedia::BaseVariables->PublishingPointLimits();
+foreach my $limit_name ( keys %limit_parameters )
+	{
+	if ( ${$limit_variables}{$limit_name} )
+		{ $Limits->{ ${$limit_variables}{$limit_name} }=$limit_parameters{$limit_name}; }
+	}
+return 1;
+}
+
+sub Publishing_Point_Limits_Get
+{
+my $self = shift;
+my $server_object = shift;
+my $publishing_point_name = shift;
+my $limit_values = shift;
+if ( !$server_object )
+        { $self->set_error("Server Object Not Set"); return 0; }
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { $self->set_error("Publishing Point Not Defined"); return 0; }
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+my $Limits = $publishing_point->{Limits};
+my $limit_variables = Win32::WindowsMedia::BaseVariables->PublishingPointLimits();
+foreach my $limit_name ( keys %{$limit_variables} )
+	{ ${$limit_values}{$limit_name}=${$Limits}{$limit_name}; }
+return 1;
+}
+
+sub Publishing_Point_Start
+{
+my $self = shift;
+my $server_ip = shift;
+my $publishing_point_name = shift;
+if ( !$server_ip )
+        {
+        $self->set_error("IP Address of Windows Media Server required");
+        return 0;
+        }
+if ( !$self->{_GLOBAL}{'Server'}{$server_ip} )
+        {
+        $self->set_error("IP Address Specified Has No Server");
+        return 0;
+        }
+my ( $server_object ) = $self->{_GLOBAL}{'Server'}{$server_ip};
+if ( !$server_object )
+        { $self->set_error("Server Object Not Set"); return 0; }
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { $self->set_error("Publishing Point Not Defined"); return 0; }
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+#if ( ${$publishing_point}{'Path'}=~/^push:\*/i )
+#        { $self->set_error("Push Publishing Points Can Not Be Started"); return 0; }
+$publishing_point->Start();
+return 1;
+}
+
+sub Publishing_Point_Stop
+{
+my $self = shift;
+my $server_ip = shift;
+my $publishing_point_name = shift;
+if ( !$server_ip )
+        {
+        $self->set_error("IP Address of Windows Media Server required");
+        return 0;
+        }
+if ( !$self->{_GLOBAL}{'Server'}{$server_ip} )
+        {
+        $self->set_error("IP Address Specified Has No Server");
+        return 0;
+        }
+my ( $server_object ) = $self->{_GLOBAL}{'Server'}{$server_ip};
+if ( !$server_object )
+        { $self->set_error("Server Object Not Set"); return 0; }
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { $self->set_error("Publishing Point Not Defined"); return 0; }
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+#if ( ${$publishing_point}{'Path'}=~/^push:\*/i )
+#	{ $self->set_error("Push Publishing Points Can Not Be Stopped"); return 0; }
+$publishing_point->Stop();
+return 1;
+}
+
+sub Publishing_Point_Remove
+{
+my $self = shift;
+my $server_ip = shift;
+my $publishing_point_name = shift;
+if ( !$server_ip )
+        {
+        $self->set_error("IP Address of Windows Media Server required");
+        return 0;
+        }
+if ( !$self->{_GLOBAL}{'Server'}{$server_ip} )
+        {
+        $self->set_error("IP Address Specified Has No Server");
+        return 0;
+        }
+my ( $server_object ) = $self->{_GLOBAL}{'Server'}{$server_ip};
+
+if ( !$server_object )
+        { $self->set_error("Server Object Not Set"); return 0; }
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { $self->set_error("Publishing Point Not Defined"); return 0; }
+my $publishing_points = $server_object->PublishingPoints;
+my $publishing_point_del = $publishing_points->Remove(
+                                $publishing_point_name
+				);
+undef $publishing_points;
+if ( !$publishing_point_del )
+	{ $self->set_error("Publishing Point Remove Error"); return 0; }
+return 1;
+}
+
+sub Publishing_Point_Create
+{
+my $self = shift;
+my $server_ip = shift;
+my $publishing_point_name = shift;
+my $publishing_point_url = shift;
+my $publishing_point_type = shift;
+
+# type can be a name or number,
+# 'OnDemand', 'Broadcast', 'CacheProxyOnDemand', 'CacheProxyBroadcast'
+my $real_pub_point_type=0;
+if ( !$server_ip )
+        {
+        $self->set_error("IP Address of Windows Media Server required");
+        return 0;
+        }
+if ( !$self->{_GLOBAL}{'Server'}{$server_ip} )
+        {
+        $self->set_error("IP Address Specified Has No Server");
+        return 0;
+        }
+my ( $server_object ) = $self->{_GLOBAL}{'Server'}{$server_ip};
+
+my $limit_variables = Win32::WindowsMedia::BaseVariables->PublishingPointType();
+foreach my $pub_type ( keys %{$limit_variables} )
+	{
+	if ( ${$limit_variables}{$pub_type}=~/$publishing_point_type/i )
+		{
+		$real_pub_point_type=$pub_type;
+		}
+	}
+
+if ( !$real_pub_point_type )
+	{
+	my $publishing_point_types;
+	foreach my $pub_type ( keys %{$limit_variables} )
+		{ $publishing_point_types.="${$limit_variables}{$pub_type},"; }
+	chop($publishing_point_types);
+	$self->set_error("Invalid Publishing Point Type Specified must be one of $publishing_point_types");
+	undef $publishing_point_types;
+	return 0;
+	}
+
+$publishing_point_url="push:*" if !$publishing_point_url;
+
+if ( $publishing_point_name!~/^[0-9a-zA-Z]+$/ )
+	{
+	$self->set_error("Publishing Point Name Invalid");
+	return 0;
+	}
+
+if ( length($publishing_point_name)<3 )
+	{
+	$self->set_error("Publishing Point Name Too Short");
+	return 0;
+	}
+
+if ( !$server_object )
+	{
+	$self->set_error("Server Object Not Set");
+	return 0;
+	}
+
+if ( $server_object->PublishingPoints($publishing_point_name) )
+	{
+	$self->set_error("Publishing Point Already Defined");
+	return 0;
+	}
+
+my $publishing_points = $server_object->PublishingPoints;
+
+# We need to eval this with a timer, why you might asked,
+# well you can figure it out.
+
+my $publishing_point_new;
+eval {
+        local $SIG{ALRM} = sub { die "Broken"; };
+        alarm 5;
+	$publishing_point_new = $publishing_points->Add( 
+				$publishing_point_name,
+				$real_pub_point_type,
+				$publishing_point_url );
+alarm 0;
+};
+
+if ( !$publishing_point_new )
+	{
+	$self->set_error("Publishing Point Creation Failed");
+	return 0;
+	}
+
+undef $publishing_points;
+
+return $publishing_point_new;
+}
+
+sub Publishing_Point_List
+{
+my $self = shift;
+my $server_ip = shift;
+my $publishing_point_name = shift;
+my @found_publishing_points;
+if ( !$server_ip )
+        {
+        $self->set_error("IP Address of Windows Media Server required");
+        return 0;
+        }
+if ( !$self->{_GLOBAL}{'Server'}{$server_ip} )
+        {
+        $self->set_error("IP Address Specified Has No Server");
+        return 0;
+        }
+my ( $server_object ) = $self->{_GLOBAL}{'Server'}{$server_ip};
+if ( !$server_object )
+        { $self->set_error("Server Object Not Set"); return 0; }
+
+for ( $a=0; $a< $server_object->PublishingPoints->{'length'}; $a++ )
+	{
+	if ( $server_object->PublishingPoints->{$a}->{'Name'}=~/^$publishing_point_name/i )
+		{ push @found_publishing_points, $$server_object->PublishingPoints->{$a}->{'Name'}; }
+	}
+
+return @found_publishing_points;
+}
+
+sub Publishing_Point_Authorization_IPAddress_Get
+{
+my $self = shift;
+my $server_object = shift;
+my $publishing_point_name = shift;
+my $ip_list_type = shift;
+my $limit_values = shift;
+if ( !$server_object )
+        { $self->set_error("Server Object Not Set"); return 0; }
+
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { $self->set_error("Publishing Point Not Defined"); return 0; }
+
+if ( $ip_list_type!~/^AllowIP/ || $ip_list_type!~/^DisallowIP/ )
+        { $self->set_error("AllowIP or DisallowIP are the only valid types"); return 0; }
+
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+my $IP_Control = $publishing_point ->EventHandlers("WMS IP Address Authorization");
+my $IP_Custom = $IP_Control->CustomInterface();
+my $IPList = ${$IP_Custom}{$ip_list_type};
+# variables should be 'Address' and 'Mask'
+if ( ${$IPList}{'Count'} > 0 )
+	{
+	for ($a=0; $a<${$IPList}{'Count'}; $a++ )
+		{
+		my $ip_entry = ${$IPList}{$a};
+		foreach my $variable ( keys %{$ip_entry} )
+			{
+			${$limit_values}{$a}{$variable}=${$ip_entry}{$variable};
+			}
+		}
+	}
+return 1;
+}
+
+
+sub Publishing_Point_Players_Get
+{
+my $self = shift;
+my $server_object = shift;
+my $publishing_point_name = shift;
+my $limit_values = shift;
+if ( !$server_object )
+        { 
+	$self->set_error("Server Object Not Set"); 
+	return 0; 
+	}
+
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { 
+	$self->set_error("Publishing Point Not Defined"); 
+	return 0; 
+	}
+
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+my $players = $publishing_point ->{Players};
+my $player_status = Win32::WindowsMedia::BaseVariables->PlayerStatus();
+if ( ${$players}{'Count'}>0 )
+	{
+	for ( $a=0; $a<${$players}{'Count'}; $a++ )
+		{
+		my $ip_client = ${$players}{$a};
+		foreach my $variable ( keys %{$ip_client} )
+			{
+			${$limit_values}{$a}{$variable}= ${$ip_client}{$variable};
+			}
+		${$limit_values}{$a}{'Status'}=${$player_status}{ ${$limit_values}{$a}{'Status'} };
+		}
+	}
+return 1;
+}
+
+sub Server_CoreVariable_Get
+{
+my $self = shift;
+my $server_object = shift;
+my $corevariable = shift;
+if ( !$server_object )
+        {
+        $self->set_error("Server Object Not Set");
+        return 0;
+        }
+
+if ( !$corevariable )
+	{
+	$self->set_error("Variable Name Required");
+	return 0;
+	}
+
+my $variable_names = Win32::WindowsMedia::BaseVariables->CoreVariableNames();
+
+foreach my $name ( keys %{$variable_names} )
+	{	
+	if ( $name=~/$corevariable/i )
+		{
+		my $type = ${$variable_names}{$name};
+		if ( $type!~/^read/i )
+			{
+			$self->set_error("Variable Name Not Value");
+			return 0;
+			}
+		my $value = $server_object->{$name};
+		return $value;
+		}
+	}
+$self->set_error("Variable Name Not Found");
+return 0;
 }
 
 sub _set_error

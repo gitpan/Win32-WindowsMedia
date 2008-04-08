@@ -9,11 +9,11 @@ Win32::WindowsMedia::BaseVariables - The control module for Windows Media
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 =head1 SYNOPSIS
 
@@ -174,6 +174,62 @@ for access control to the publishing point.
     Video
     Audio
     Other
+
+=head2 DefaultAvailableSubSystems
+
+    This function returns the names of some of the default sub systems within 
+Windows Media Services.
+
+    WMS IP Address Authorization
+    WMS Anonymous User Authentication
+    WMS Negotiate Authentication
+    WMS Digest Authentication
+    WMS Publishing Points ACL Authorization
+    WMS Client Logging
+    WMS Playlist Transform
+
+    This is not a definitive list and it appears can not be pulled dynamically as
+they operate at different levels within Windows Media Services.
+
+=head2 CoreVariableNames
+
+    This function returns the name of the variables at the top level of the server
+instance. It also returns the variable type, so pointer to the next level down or
+if it is directly read/writable. 
+
+    AllowClientsToConnect
+    Authenticators
+    CacheProxy
+    ControlProtocols
+    CurrentCounters
+    DataSources
+    EventHandlers
+    Limits
+    FileDescriptions
+    MediaParsers
+    MonikerName
+    Name
+    PeakCounters
+    PlaylistParsers
+    Properties
+    PublishingPoints
+    TotalCounters
+    UnicastDataSinks
+    Players
+    Status
+    StartTime
+    OutgoingDistributionConnections
+    CPUUtilization
+    StreamFilters
+    Version
+    DefaultPluginLoadType
+    AvailableIPAddresses
+    RootDirectories
+    DiagnosticEvents
+    EnableReverseProxyMode
+    FileType
+    DefaultPath
+    OSProductType
 
 =cut
 
@@ -347,6 +403,145 @@ my %StreamType =
 return \%StreamType;
 }
 
+sub DefaultAvailableEventHandlerSubSystems
+{
+my %EventHandlerSubSystems =
+		(
+		'WMS Client Logging'				=>	1,
+		'WMS NTFS ACL Authorization'			=>	1,
+		'WMS WMI Event Handler'				=>	1,
+		'WMS IP Address Authorization'			=>	1,
+		'WMS Publishing Points ACL Authorization'	=>	1,
+		'WMS Playlist Transform'			=>	1,
+		'WMS Active Script Event Handler'		=>	1
+		);
+return \%EventHandlerSubSystems;
+}
+
+sub DefaultAvailableAuthenticators
+{
+my %AuthenticatorSubSystems =
+		(
+		'WMS Anonymous User Authentication'		=>	1,
+		'WMS Negotiate Authentication'			=>	1,
+		'WMS Digest Authentication'			=>	1
+		);
+return \%AuthenticatorSubSystems;
+}
+
+sub CoreVariableNames
+{
+my %corenames =	(
+		'AllowClientsToConnect'			=> 'ReadWrite',
+		'Authenticators'			=> 'Pointer',
+		'CacheProxy'				=> 'Pointer',
+		'ControlProtocols'			=> 'Pointer',
+		'CurrentCounters'			=> 'Pointer',
+		'DataSources'				=> 'Pointer',
+		'EventHandlers' 			=> 'Pointer',
+		'Limits'				=> 'Pointer',
+		'FileDescriptions'			=> 'Read',
+		'MediaParsers'				=> 'Pointer',
+		'MonikerName'				=> 'Read',
+		'Name'					=> 'Read',
+		'PeakCounters'				=> 'Pointer',
+		'PlaylistParsers'			=> 'Pointer',
+		'Properties'				=> 'Pointer',
+		'PublishingPoints'			=> 'Pointer',
+		'TotalCounters'				=> 'Pointer',
+		'UnicastDataSinks'			=> 'Pointer',
+		'Players'				=> 'Pointer',
+		'Status'				=> 'Pointer',
+		'StartTime'				=> 'Pointer',
+		'OutgoingDistributionConnections'	=> 'Pointer',
+		'CPUUtilization'			=> 'Read',
+		'StreamFilters'				=> 'Pointer',
+		'Version'				=> 'Read',
+		'DefaultPluginLoadType'			=> 'ReadWrite',
+		'AvailableIPAddresses'			=> 'Pointer',
+		'RootDirectories'			=> 'Pointer',
+		'DiagnosticEvents'			=> 'Pointer',
+		'EnableReverseProxyMode'		=> 'ReadWrite',
+		'FileType'				=> 'Read',
+		'DefaultPath'				=> 'Read',
+		'OSProductType'				=> 'Read'
+		);
+return \%corenames;
+}
+
+sub PubPointVariableNames
+{
+my %PubPointNames = (
+		'AllowClientsToConnect'			=> 'ReadWrite',
+		'CurrentCounters'			=> 'Pointer',
+		'EventHandlers'				=> 'Pointer',
+		'ID'					=> 'Read',
+		'Limits'				=> 'Pointer',
+		'FileDescriptions'			=> 'Pointer',
+		'MonikerName'				=> 'Read',
+		'Name'					=> 'Read',
+		'OutgoingDistributionConnections'	=> 'Pointer',
+		'Path'					=> 'Read',
+		'PeakCounters'				=> 'Pointer',
+		'Players'				=> 'Pointer',
+		'Properties'				=> 'Pointer',
+		'TotalCounters'				=> 'Pointer',
+		'Type'					=> 'Read',
+		'WrapperPath'				=> 'Read',
+		'Authenticators'			=> 'Pointer',
+		'Status'				=> 'Read',
+		'EnableWrapperPath'			=> 'ReadWrite',
+		'StreamFilters'				=> 'Pointer',
+		'DistributionUserName'			=> 'ReadWrite',
+		'CacheProxyExpiration'			=> 'ReadWrite',
+		'IsDistributionPasswordSet'		=> 'ReadWrite',
+		'AllowPlayerSideDiskCaching'		=> 'ReadWrite',
+		'EnableFEC'				=> 'ReadWrite',
+		'AllowStreamSplitting'			=> 'ReadWrite',
+		'AllowClientToStartAndStop'		=> 'ReadWrite',
+		'BroadcastDataSinks'			=> 'Pointer',
+		'SharedPlaylist'			=> 'Read',
+		'BroadcastStatus'			=> 'Read',
+		'UpTime'				=> 'Read',
+		'AnnouncementStreamFormats'		=> 'Pointer',
+		'BufferSetting'				=> 'ReadWrite',
+		'AllowStartupProfile'			=> 'ReadWrite',
+		'EnableStartVRootOnServiceStart'	=> 'ReadWrite'
+		);
+return \%PubPointNames;
+}
+
+sub PubPointLimitNames
+{
+my %PubPointLimits = (
+		'ConnectedPlayers'			=> 'Read',
+		'OutgoingDistributionBandwidth'		=> 'ReadWrite',
+		'OutgoingDistributionConnections'	=> 'ReadWrite',
+		'PerOutgoingDistributionConnectionBandwidth' => 'ReadWrite',
+		'PlayerBandwidth'			=> 'ReadWrite',
+		'PerPlayerConnectionBandwidth'		=> 'ReadWrite',
+		'PlayerCacheDeliveryRate'		=> 'ReadWrite',
+		'FECPacketSpan'				=> 'ReadWrite',
+		'PerPlayerRapidStartBandwidth'		=> 'ReadWrite'
+			);
+
+return \%PubPointLimits;
+}
+
+sub PubPointPeakNames
+{
+my %PubPointPeakName = (
+		'ConnectedPlayers'			=> 'Read',
+		'OutgoingDistributionConnections'	=> 'Read',
+		'OutgoingDistributionAllocatedBandwidth'=> 'Read',
+		'PlayerAllocatedBandwidth'		=> 'Read',
+		'CountersStartTime'			=> 'Read',
+		'StreamingPlayers'			=> 'Read',
+		'AllCounters'				=> 'PointerArray'
+			);
+return \%PubPointPeakName;
+}
+
 =cut
 
 =head1 AUTHOR
@@ -367,7 +562,7 @@ L<http://search.cpan.org/dist/Win32-WindowsMedia-Provision>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 Andrew S. Kennedy, all rights reserved.
+Copyright 2008 Andrew S. Kennedy, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

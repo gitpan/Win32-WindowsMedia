@@ -1,5 +1,8 @@
 Revision history for Win32-WindowsMedia
 
+0.20	08/04/2008 Alpha Release 1
+	All previous modules have been merged into this one.
+	Backward compatiblity to 0.16 or before is not present.
 0.16	22/01/2008 Pre-Alpha Release 2
 	Documented current functions
 	No New Additions
