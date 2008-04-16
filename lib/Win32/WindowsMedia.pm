@@ -12,11 +12,11 @@ Win32::WindowsMedia - Base Module for Provisiong and control for Windows Media S
 
 =head1 VERSION
 
-Version 0.20
+Version 0.21
 
 =cut
 
-our $VERSION = '0.20';
+our $VERSION = '0.21';
 
 =head1 SYNOPSIS
 
@@ -146,7 +146,78 @@ The above will return all publishing points defined.
 
 =item C<< Publishing_Point_Authorization_ACL_Add >>
 
+This function adds a username to the authorization list allowed to connect to this stream. The defaults
+are dependent on the Parent configuration, but you can change them at this level. In order to make a change
+you must first delete a user, you can not add them again ( their previous entry will remain so adding them
+again with a different mask will not have any effect ).
+
+    Publishing_Point_Authorization_ACL_Add ("<IP>","<publishing point name>","<pointer to hash of users");
+
+The <hash of users> is made up of a username as the key and their mask being comma seperated entries made
+up from UserAccessSettings function. The allowable entries are
+
+    ACCESSINIT
+    ReadDeny
+    WriteDeny
+    CreateDeny
+    AllDeny
+    UNKNOWN
+    ReadAllow
+    WriteAllow
+    CreateAllow
+    AllAllow
+
+    To build an entry use the following
+
+    my %user_list = (
+		'Username' 	=> 'ReadAllow,WriteAllow'
+		'username2'	=> 'ReadAllow'
+			);
+
+    This would allow the user 'Username' to read and write to the stream ( so push ), and also allow user 'username2' to
+read from the stream ( so listen ).
+
+    You must remember the server must have these usernames configured, or accessable otherwise it will fail (silently). You
+can specify a username in a domain, such if the server is configured in a domain, and do to so requires you to put the domain
+before the username. To change 'Username' to be part of a domain it should be changed to 'domain\\Username' where 'domain'
+is the name of the domain the user is in. Note the double \ is required.
+
+    There is a SPECIAL user called 'Everyone' ( well it is a user defined on the server by default ) and is configured so
+that if added to the publishing point it allows anyone to listen. If you do not want to use username/password for encoders
+to connect you need to remove and then re-add Everyone with permissions of ReadAllow,WriteAllow.
+
+Example of Use
+
+    my %user_list = ( 'Everyone'	=> 'ReadAllow,WriteAllow');
+    $main->Publishing_Point_Authorization_ACL_Remove( "127.0.0.1", "publishing_point", \%user_list);
+    $main->Publishing_Point_Authorization_ACL_Add( "127.0.0.1", "publishing_point", \%user_list);
+
+    This will remove the username Everyone from the ACL then add it back in with read and write permissions.
+
 =item C<< Publishing_Point_Authorization_ACL_Remove >>
+
+This function removes a username from the authorization list allowed to connect to this stream. The defaults
+are dependent on the Parent configuration, but you can change them at this level. 
+
+    Publishing_Point_Authorization_ACL_Remove ("<IP>","<publishing point name>","<pointer to hash of users");
+
+Example of Use
+
+    my %user_list = ( 'Everyone'        => 'ReadAllow,WriteAllow');
+    $main->Publishing_Point_Authorization_ACL_Remove( "127.0.0.1", "publishing_point", \%user_list);
+
+=item C<< Publishing_Point_Authorization_ACL_List >>
+
+This function lists the usernames and their permissions currently defined on the publishing point. The function
+requires pointer to a hash which is populated with the username as the key and the value is the numerical value
+of the access mask.
+
+    Publishing_Point_Authorization_ACL_List "<IP>","<publishing point name>","<pointer to hash");
+
+Example of Use
+
+    my %user_list;
+    $main->Publishing_Point_Authorization_ACL_List( "127.0.0.1", "publishing_point", \%user_list);
 
 =item C<< Publishing_Point_Authorization_IPAddress_Add >>
 
@@ -321,6 +392,36 @@ foreach my $user ( keys %{$limit_parameters} )
 return 1;
 }
 
+sub Publishing_Point_Authorization_ACL_List
+{
+my $self = shift;
+my $server_ip = shift;
+my $publishing_point_name = shift;
+my $users_configured = shift;
+if ( !$server_ip )
+        { $self->set_error("IP Address of Windows Media Server required");
+        return 0; }
+if ( !$self->{_GLOBAL}{'Server'}{$server_ip} )
+        { $self->set_error("IP Address Specified Has No Server");
+        return 0; }
+
+my ( $server_object ) = $self->{_GLOBAL}{'Server'}{$server_ip};
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { $self->set_error("Publishing Point Not Defined"); return 0; }
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+my $User_Control = $publishing_point ->EventHandlers("WMS Publishing Points ACL Authorization");
+my $User_Custom = $User_Control->CustomInterface();
+my $User_List = $User_Custom->AccessControlList();
+for ($a=0;$a< ${$User_List}{'Count'}; $a++)
+	{
+	my $info= ${$User_List}{$a};
+	my $name = ${$info}{'Trustee'};
+	my $user_mask = ${$info}{'AccessMask'};
+	${$users_configured}{$name}=$user_mask;
+	}
+return 1;
+}
+
 sub Publishing_Point_Authorization_ACL_Remove
 {
 my $self = shift;
@@ -335,7 +436,7 @@ my $publishing_point = $server_object->PublishingPoints( $publishing_point_name 
 my $User_Control = $publishing_point ->EventHandlers("WMS Publishing Points ACL Authorization");
 my $User_Custom = $User_Control->CustomInterface();
 my $User_List = $User_Custom->AccessControlList();
-foreach my $user ( @{$limit_parameters} )
+foreach my $user ( keys %{$limit_parameters} )
         {
         my $add_user=$User_List->Remove( $user );
         }

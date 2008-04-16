@@ -1,5 +1,9 @@
 Revision history for Win32-WindowsMedia
 
+0.21 	15/04/2008
+	Change Publishing_Point_Authorization_ACL_Remove from using an array to hash to
+	match the input to Publishing_Point_Authorization_ACL_Add
+	Added Publishing_Point_Authorization_ACL_List to list users defined on a publishing point.
 0.20	08/04/2008 Alpha Release 1
 	All previous modules have been merged into this one.
 	Backward compatiblity to 0.16 or before is not present.

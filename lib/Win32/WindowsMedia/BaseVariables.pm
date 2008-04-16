@@ -9,11 +9,11 @@ Win32::WindowsMedia::BaseVariables - The control module for Windows Media
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =cut
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 =head1 SYNOPSIS
 
@@ -526,6 +526,27 @@ my %PubPointLimits = (
 			);
 
 return \%PubPointLimits;
+}
+
+sub PubPointTotalCounters
+{
+my %PubPointTotalCounters = (
+		'ConnectedPlayers'			=> 'Read',
+		'OutgoingDistributionConnections'	=> 'Read',
+		'LateReads'				=> 'Read',
+		'OutgoingDistributionBytesSent'		=> 'Read',
+		'PlayerBytesSent'			=> 'Read',
+		'CountersStartTime'			=> 'Pointer',
+		'StreamDenials'				=> 'Read',
+		'StreamErrors'				=> 'Read',
+		'StreamingPlayers'			=> 'Read',
+		'StreamTerminations'			=> 'Read',
+		'UDPResendRequests'			=> 'Read',
+		'UDPResendsSent'			=> 'Read',
+		'LateSends'				=> 'Read',
+		'Advertisements'			=> 'Read'
+			);
+return \%PubPointTotalCounters;
 }
 
 sub PubPointPeakNames
