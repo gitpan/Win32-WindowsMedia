@@ -1,5 +1,7 @@
 Revision history for Win32-WindowsMedia
 
+0.22	15/04/2008
+	Small bug fix for set_error call.
 0.21 	15/04/2008
 	Change Publishing_Point_Authorization_ACL_Remove from using an array to hash to
 	match the input to Publishing_Point_Authorization_ACL_Add

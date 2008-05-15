@@ -12,11 +12,11 @@ Win32::WindowsMedia - Base Module for Provisiong and control for Windows Media S
 
 =head1 VERSION
 
-Version 0.21
+Version 0.22
 
 =cut
 
-our $VERSION = '0.21';
+our $VERSION = '0.22';
 
 =head1 SYNOPSIS
 
@@ -900,7 +900,7 @@ $self->set_error("Variable Name Not Found");
 return 0;
 }
 
-sub _set_error
+sub set_error
 {
 my $self = shift;
 my $error = shift;
@@ -908,7 +908,7 @@ $self->{_GLOBAL}{'STATUS'} = $error;
 return 1;
 }
 
-sub _get_error
+sub get_error
 {
 my $self = shift;
 return $self->{_GLOBAL}{'STATUS'};
