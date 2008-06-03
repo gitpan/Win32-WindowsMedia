@@ -12,11 +12,11 @@ Win32::WindowsMedia - Base Module for Provisiong and control for Windows Media S
 
 =head1 VERSION
 
-Version 0.22
+Version 0.253
 
 =cut
 
-our $VERSION = '0.22';
+our $VERSION = '0.253';
 
 =head1 SYNOPSIS
 
@@ -212,12 +212,77 @@ This function lists the usernames and their permissions currently defined on the
 requires pointer to a hash which is populated with the username as the key and the value is the numerical value
 of the access mask.
 
-    Publishing_Point_Authorization_ACL_List "<IP>","<publishing point name>","<pointer to hash");
+    Publishing_Point_Authorization_ACL_List ("<IP>","<publishing point name>","<pointer to hash");
 
 Example of Use
 
     my %user_list;
     $main->Publishing_Point_Authorization_ACL_List( "127.0.0.1", "publishing_point", \%user_list);
+
+=item C<< Publishing_Point_Log_Set >>
+
+This function sets up the logging facility for the publishing point named. You should only set the variables
+you need and leave the others as default.
+
+    Publishing_Point_Log_Set( "<IP>","<publishing point name>","<pointer to hash for template");
+
+Example of Use
+
+    my %log_settings =
+		(
+		'Template'	=> 'D:\Andrew\logs-<Y><m><d>.log',
+		'Cycle'		=> 'Month',
+		'UseLocalTime'	=> 'Yes',
+		'UseBuffering'	=> 'Yes',
+		'UseUnicode'	=> 'Yes',
+		'V4Compat'	=> 'No',
+		'MaxSize'	=> 0,
+		'RoleFilter'	=> 'SHAMROCK',
+		'LoggedEvents'	=> 'Player,Local'
+		);
+
+    $main->Publishing_Point_Log_Set("127.0.0.1","publishing_point",\%log_settings);
+
+    Cycle can be one of None Size Month Week Day Hour
+
+    MaxSize is in Mbytes and only used when Cycle is Size
+
+    LoggedEvents can be None Player Distribution Local Remote Filter seperated by a comma (,)
+
+    You can also use FreeSpaceQuota. This has a default of 10, which means 10Mbytes. The attribute means
+    how much free space should be available for logging to work.
+
+=item C<< Publishing_Point_Log_Enable >>
+
+This function turns on the logging plugin. If you make changes using Publishing_Point_Log_Set you need
+to call Publishing_Point_Log_Disable and then Publishing_Point_Log_Enable for them to take effect.
+
+    Publishing_Point_Log_Enable("<IP>","<publishing point name>");
+
+Example of Use
+
+    $main->Publishing_Point_Log_Enable("127.0.0.1","publishing_point");
+
+=item C<< Publishing_Point_Log_Disable >>
+
+This function turns off the logging plugin. If you make changes using Publishing_Point_Log_Set you need
+to call Publishing_Point_Log_Disable and then Publishing_Point_Log_Enable for them to take effect.
+
+    Publishing_Point_Log_Disable("<IP>","<publishing point name>");
+
+Example of Use
+
+    $main->Publishing_Point_Log_Disable("127.0.0.1","publishing_point");
+
+=item C<< Publishing_Point_Log_Cycle >>
+
+This function cycles the log file immediately rather than waiting for the log time.
+
+    Publishing_Point_Log_Cycle("<IP>","<publishing point name>");
+
+Example Of Use
+
+    $main->Publishing_Point_Log_Cycle("127.0.0.1","publishing_point");
 
 =item C<< Publishing_Point_Authorization_IPAddress_Add >>
 
@@ -762,12 +827,31 @@ undef $publishing_points;
 return $publishing_point_new;
 }
 
+sub Publishing_Point_Path
+{
+my $self = shift;
+my $server_ip = shift;
+my $publishing_point_name = shift;
+my $path = shift;
+my $stop = $self->Publishing_Point_Stop($server_ip,$publishing_point_name);
+if ( !$stop )
+	{ return 0; }
+my ( $server_object ) = $self->{_GLOBAL}{'Server'}{$server_ip};
+if ( !$server_object )
+        { $self->set_error("Server Object Not Set"); return 0; }
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { $self->set_error("Publishing Point Not Defined"); return 0; }
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+${$publishing_point}{'Path'} =$path;
+return 1;
+}
+
 sub Publishing_Point_List
 {
 my $self = shift;
 my $server_ip = shift;
 my $publishing_point_name = shift;
-my @found_publishing_points;
+my (@found_publishing_points);
 if ( !$server_ip )
         {
         $self->set_error("IP Address of Windows Media Server required");
@@ -784,8 +868,8 @@ if ( !$server_object )
 
 for ( $a=0; $a< $server_object->PublishingPoints->{'length'}; $a++ )
 	{
-	if ( $server_object->PublishingPoints->{$a}->{'Name'}=~/^$publishing_point_name/i )
-		{ push @found_publishing_points, $$server_object->PublishingPoints->{$a}->{'Name'}; }
+	if ( $server_object->PublishingPoints->{$a}->{'Name'}=~/$publishing_point_name/ig )
+		{ push @found_publishing_points, $server_object->PublishingPoints->{$a}->{'Name'}; }
 	}
 
 return @found_publishing_points;
@@ -860,6 +944,177 @@ if ( ${$players}{'Count'}>0 )
 		${$limit_values}{$a}{'Status'}=${$player_status}{ ${$limit_values}{$a}{'Status'} };
 		}
 	}
+return 1;
+}
+
+sub Publishing_Point_Log_Cycle
+{
+my ( $self ) = shift;
+my ( $server_ip ) = shift;
+my ( $publishing_point_name ) = shift;
+if ( !$self->{_GLOBAL}{'Server'}{$server_ip} )
+        {
+        $self->set_error("IP Address Specified Has No Server");
+        return 0;
+        }
+my ( $server_object ) = $self->{_GLOBAL}{'Server'}{$server_ip};
+if ( !$server_object )
+        {
+        $self->set_error("OLE Object Failed To Initialise");
+        # need to add error capture here
+        return 0;
+        }
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        {
+        $self->set_error("Publishing Point Not Defined");
+        return 0;
+        }
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+my $log_plugin=$publishing_point->EventHandlers("WMS Client Logging");
+my $log_custom =$log_plugin->CustomInterface();
+$log_custom->CycleNow();
+return 1;
+}
+
+
+sub Publishing_Point_Log_Set
+{
+my ( $self ) = shift;
+my ( $server_ip ) = shift;
+my ( $publishing_point_name ) = shift;
+my ( $template ) = shift;
+
+my ( $real_log_type );
+
+if ( !$self->{_GLOBAL}{'Server'}{$server_ip} )
+        {
+        $self->set_error("IP Address Specified Has No Server");
+        return 0;
+        }
+my ( $server_object ) = $self->{_GLOBAL}{'Server'}{$server_ip};
+if ( !$server_object )
+        {
+        $self->set_error("OLE Object Failed To Initialise");
+        # need to add error capture here
+        return 0;
+        }
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        {
+        $self->set_error("Publishing Point Not Defined");
+        return 0;
+        }
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+
+my $log_plugin=$publishing_point->EventHandlers("WMS Client Logging");
+
+my $log_custom =$log_plugin->CustomInterface();
+
+my $limit_variables = Win32::WindowsMedia::BaseVariables->ServerLogCycle();
+foreach my $log_type ( keys %{$limit_variables} )
+        {
+        if ( ${$limit_variables}{$log_type}=~/${$template}{'Cycle'}/i )
+                {
+                ${$template}{'Cycle'}=$log_type;
+                }
+        }
+
+
+my $option_transform = Win32::WindowsMedia::BaseVariables->Return_Yes_No();
+
+${$log_custom}{'Template'}=${$template}{'Template'};
+${$log_custom}{'Cycle'}=${$template}{'Cycle'};
+${$log_custom}{'UseLocalTime'}=${$option_transform}{ ${$template}{'UseLocalTime'} };
+${$log_custom}{'UseBuffering'}=${$option_transform}{ ${$template}{'UseBuffering'} };
+${$log_custom}{'UseUnicode'}=${$option_transform}{ ${$template}{'UseUnicode'} };
+${$log_custom}{'V4Compat'}=${$option_transform}{ ${$template}{'V4Compat'} };
+
+${$log_custom}{'MaxSize'}=${$template}{'MaxSize'};
+${$log_custom}{'RoleFilter'}=${$template}{'RoleFilter'};
+
+if ( ${$template}{'FreeSpaceQuota'} )
+	{ ${$log_custom}{'MaxSize'}=${$template}{'FreeSpaceQuota'}; }
+
+if ( ${$template}{'LoggedEvents'} )
+	{
+	my $log_value=0;
+	my $log_variables = Win32::WindowsMedia::BaseVariables->ServerLogType();
+	foreach my $log_entry ( split(/,/,${$template}{'LoggedEvents'}) )
+		{
+		foreach my $limit_names ( keys %{$log_variables} )
+			{
+			if ( $log_entry=~/${$log_variables}{$limit_names}/i )
+				{ $log_value+=$limit_names; }
+			}
+		}
+        ${$log_custom}{'LoggedEvents'}=$log_value;
+	}
+
+return 1;
+}
+
+sub Publishing_Point_Log_Disable
+{
+my ( $self ) = shift;
+my ( $server_ip ) = shift;
+my ( $publishing_point_name ) = shift;
+if ( !$self->{_GLOBAL}{'Server'}{$server_ip} )
+        {
+        $self->set_error("IP Address Specified Has No Server");
+        return 0;
+        }
+my ( $server_object ) = $self->{_GLOBAL}{'Server'}{$server_ip};
+if ( !$server_object )
+        {
+        $self->set_error("OLE Object Failed To Initialise");
+        # need to add error capture here
+        return 0;
+        }
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        {
+        $self->set_error("Publishing Point Not Defined");
+        return 0;
+        }
+
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+
+my $log_plugin=$publishing_point->EventHandlers("WMS Client Logging");
+
+${$log_plugin}{'Enabled'}=0;
+
+return 1;
+}
+
+sub Publishing_Point_Log_Enable
+{
+my ( $self ) = shift;
+my ( $server_ip ) = shift;
+my ( $publishing_point_name ) = shift;
+
+if ( !$self->{_GLOBAL}{'Server'}{$server_ip} )
+        {
+        $self->set_error("IP Address Specified Has No Server");
+        return 0;
+        }
+my ( $server_object ) = $self->{_GLOBAL}{'Server'}{$server_ip};
+if ( !$server_object )
+        {
+        $self->set_error("OLE Object Failed To Initialise");
+        # need to add error capture here
+        return 0;
+        }
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        {
+        $self->set_error("Publishing Point Not Defined");
+        return 0;
+        }
+
+
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+
+my $log_plugin=$publishing_point->EventHandlers("WMS Client Logging");
+
+${$log_plugin}{'Enabled'}=1;
+
 return 1;
 }
 

@@ -1,5 +1,21 @@
 Revision history for Win32-WindowsMedia
 
+0.253	03/06/2008
+	Debug wrapper added
+0.252	03/06/2008
+	Added Log_Cycle and modified how Log_Set now works, see documentation, so most
+	options are now available.
+	At present you can not get the logging parameters only set them.
+0.251	03/06/2008
+	Fixed a regex
+	Started to add options for Logging
+	Changed Log function to add parameters
+0.25	02/06/2008
+	Added Logging ( basic )
+0.24	30/05/2008
+	Fixed some typos and fixed List error
+0.23	18/05/2008
+	Added path change ( stop publishing point first)
 0.22	15/04/2008
 	Small bug fix for set_error call.
 0.21 	15/04/2008

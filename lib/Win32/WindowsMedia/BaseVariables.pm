@@ -9,11 +9,11 @@ Win32::WindowsMedia::BaseVariables - The control module for Windows Media
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =cut
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 =head1 SYNOPSIS
 
@@ -248,6 +248,17 @@ sub new {
         return $self;
 }
 
+sub Return_Yes_No
+{
+my %Yes_No =
+	(
+	"Yes" =>	1,
+	"No"  =>	0
+	);
+
+return \%Yes_No;
+}
+
 sub ServerType
 {
 my %ServerType =
@@ -349,6 +360,20 @@ my %UserAccessSettings =
 		112		=>	'AllAllow'
 		);
 return \%UserAccessSettings;
+}
+
+sub ServerLogType
+{
+my %ServerLogType =
+	(
+	0	=> 'None',
+	1	=> 'Player',
+	2	=> 'Distribution',
+	4	=> 'Local',
+	8	=> 'Remote',
+	16	=> 'Filter'
+	);
+return \%ServerLogType;
 }
 
 sub ServerLogCycle
