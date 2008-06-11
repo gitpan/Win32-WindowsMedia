@@ -12,11 +12,11 @@ Win32::WindowsMedia - Base Module for Provisiong and control for Windows Media S
 
 =head1 VERSION
 
-Version 0.253
+Version 0.257
 
 =cut
 
-our $VERSION = '0.253';
+our $VERSION = '0.257';
 
 =head1 SYNOPSIS
 
@@ -373,6 +373,28 @@ delete $self->{_GLOBAL}{'Server'}{$server_ip};
 return 1;
 }
 
+
+sub Server_ExportXML
+{
+my $self = shift;
+my $server_ip = shift;
+my $filename = shift;
+if ( !$server_ip )
+        { $self->set_error("IP Address of Windows Media Server required");
+        return 0; }
+if ( !$self->{_GLOBAL}{'Server'}{$server_ip} )
+        { $self->set_error("IP Address Specified Has No Server");
+        return 0; }
+if ( !$filename )
+        { $self->set_error("Filename Not Specified");
+        return 0; }
+
+my ( $server_object ) = $self->{_GLOBAL}{'Server'}{$server_ip};
+
+$server_object->ExportXML($filename);
+return 1;
+}
+
 # Playlist functions go here.
 
 sub Playlist_Jump_To_Event
@@ -413,6 +435,47 @@ if ( !$publishing_point_playlist )
 my $error = $publishing_point_playlist->FireEvent( $event_name );
 return 1;
 }
+
+sub Publishing_Point_Authorization_ACL_Enable
+{
+my $self = shift;
+my $server_ip = shift;
+my $publishing_point_name = shift;
+if ( !$server_ip )
+        { $self->set_error("IP Address of Windows Media Server required");
+        return 0; }
+if ( !$self->{_GLOBAL}{'Server'}{$server_ip} )
+        { $self->set_error("IP Address Specified Has No Server");
+        return 0; }
+my ( $server_object ) = $self->{_GLOBAL}{'Server'}{$server_ip};
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { $self->set_error("Publishing Point Not Defined"); return 0; }
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+my $User_Control = $publishing_point->EventHandlers("WMS Publishing Points ACL Authorization");
+${$User_Control}{'Enabled'}=1;
+return 1;
+}
+
+sub Publishing_Point_Authorization_ACL_Disable
+{
+my $self = shift;
+my $server_ip = shift;
+my $publishing_point_name = shift;
+if ( !$server_ip )
+        { $self->set_error("IP Address of Windows Media Server required");
+        return 0; }
+if ( !$self->{_GLOBAL}{'Server'}{$server_ip} )
+        { $self->set_error("IP Address Specified Has No Server");
+        return 0; }
+my ( $server_object ) = $self->{_GLOBAL}{'Server'}{$server_ip};
+if ( !$server_object->PublishingPoints($publishing_point_name) )
+        { $self->set_error("Publishing Point Not Defined"); return 0; }
+my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
+my $User_Control = $publishing_point->EventHandlers("WMS Publishing Points ACL Authorization");
+${$User_Control}{'Enabled'}=0;
+return 1;
+}
+
 
 sub Publishing_Point_Authorization_ACL_Add
 {
@@ -490,13 +553,26 @@ return 1;
 sub Publishing_Point_Authorization_ACL_Remove
 {
 my $self = shift;
-my $server_object = shift;
+my $server_ip = shift;
 my $publishing_point_name = shift;
 my $limit_parameters = shift;
+
+if ( !$server_ip )
+        { $self->set_error("IP Address of Windows Media Server required");
+        return 0; }
+
+if ( !$self->{_GLOBAL}{'Server'}{$server_ip} )
+        { $self->set_error("IP Address Specified Has No Server");
+        return 0; }
+
+my ( $server_object ) = $self->{_GLOBAL}{'Server'}{$server_ip};
+
 if ( !$server_object )
         { $self->set_error("Server Object Not Set"); return 0; }
+
 if ( !$server_object->PublishingPoints($publishing_point_name) )
         { $self->set_error("Publishing Point Not Defined"); return 0; }
+
 my $publishing_point = $server_object->PublishingPoints( $publishing_point_name );
 my $User_Control = $publishing_point ->EventHandlers("WMS Publishing Points ACL Authorization");
 my $User_Custom = $User_Control->CustomInterface();

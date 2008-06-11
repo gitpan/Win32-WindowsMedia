@@ -1,5 +1,21 @@
 Revision history for Win32-WindowsMedia
 
+0.257	11/06/2008
+	Internal change release
+	Release for PPM repository at
+	http://www.shamrock.org.uk/PPM/
+0.256 	10/06/2008
+	Internal change release
+0.255	09/06/2008
+	Added - Not added to documentation as yet
+	Server_ExportXML
+	Publishing_Point_Authorization_ACL_Enable
+	Publishing_Point_Authorization_ACL_Disable
+	Fixed
+	Publishing_Point_Authorization_ACL_Add
+	Publishing_Point_Authorization_ACL_Remove
+0.254   06/06/2008
+	Log_Enable, Log_Disable now fixed
 0.253	03/06/2008
 	Debug wrapper added
 0.252	03/06/2008
