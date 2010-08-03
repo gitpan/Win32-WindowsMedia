@@ -1,5 +1,7 @@
 Revision history for Win32-WindowsMedia
 
+0.258	03/08/2010
+	Changes the regex match to allow - and _ characters in publishing point names.
 0.257	11/06/2008
 	Internal change release
 	Release for PPM repository at

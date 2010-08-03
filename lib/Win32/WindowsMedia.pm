@@ -12,11 +12,11 @@ Win32::WindowsMedia - Base Module for Provisiong and control for Windows Media S
 
 =head1 VERSION
 
-Version 0.257
+Version 0.258
 
 =cut
 
-our $VERSION = '0.257';
+our $VERSION = '0.258';
 
 =head1 SYNOPSIS
 
@@ -852,7 +852,7 @@ if ( !$real_pub_point_type )
 
 $publishing_point_url="push:*" if !$publishing_point_url;
 
-if ( $publishing_point_name!~/^[0-9a-zA-Z]+$/ )
+if ( $publishing_point_name!~/^[0-9a-zA-Z\-_]+$/ )
 	{
 	$self->set_error("Publishing Point Name Invalid");
 	return 0;
